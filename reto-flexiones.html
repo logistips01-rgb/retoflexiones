@@ -1,0 +1,682 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Reto Flexiones 365</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Syne:wght@400;700;800&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0a0a0a;
+  --surface:#141414;
+  --surface2:#1e1e1e;
+  --border:#2a2a2a;
+  --accent:#c8f135;
+  --accent2:#f1c135;
+  --text:#f0f0f0;
+  --muted:#888;
+  --danger:#ff5a5a;
+  --success:#5aff9a;
+  --radius:12px;
+  --mono:'DM Mono',monospace;
+  --display:'Syne',sans-serif;
+}
+body{background:var(--bg);color:var(--text);font-family:var(--display);min-height:100vh;overflow-x:hidden}
+
+/* AUTH */
+#auth-screen{display:flex;align-items:center;justify-content:center;min-height:100vh;padding:2rem}
+.auth-box{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:2.5rem;width:100%;max-width:420px}
+.auth-logo{font-size:2.2rem;font-weight:800;letter-spacing:-2px;margin-bottom:.25rem}
+.auth-logo span{color:var(--accent)}
+.auth-sub{color:var(--muted);font-size:.85rem;font-family:var(--mono);margin-bottom:2rem}
+.auth-tabs{display:flex;gap:0;margin-bottom:1.5rem;border:1px solid var(--border);border-radius:8px;overflow:hidden}
+.auth-tab{flex:1;padding:.6rem;background:transparent;border:none;color:var(--muted);cursor:pointer;font-family:var(--display);font-size:.85rem;transition:.2s}
+.auth-tab.active{background:var(--accent);color:#000;font-weight:700}
+.field{margin-bottom:1rem}
+.field label{display:block;font-size:.75rem;color:var(--muted);font-family:var(--mono);margin-bottom:.4rem;text-transform:uppercase;letter-spacing:.05em}
+.field input{width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:.75rem 1rem;color:var(--text);font-family:var(--mono);font-size:.9rem;outline:none;transition:.2s}
+.field input:focus{border-color:var(--accent)}
+.btn-primary{width:100%;background:var(--accent);color:#000;border:none;border-radius:8px;padding:.85rem;font-family:var(--display);font-weight:700;font-size:1rem;cursor:pointer;transition:.15s}
+.btn-primary:hover{opacity:.9}
+.btn-primary:active{transform:scale(.98)}
+.auth-msg{font-size:.8rem;font-family:var(--mono);margin-top:.75rem;text-align:center}
+.auth-msg.err{color:var(--danger)}
+.auth-msg.ok{color:var(--success)}
+
+/* APP */
+#app{display:none}
+.topbar{background:var(--surface);border-bottom:1px solid var(--border);padding:.75rem 1.5rem;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100}
+.topbar-logo{font-size:1.2rem;font-weight:800;letter-spacing:-1px}
+.topbar-logo span{color:var(--accent)}
+.topbar-user{display:flex;align-items:center;gap:.75rem}
+.user-avatar{width:34px;height:34px;border-radius:50%;background:var(--accent);color:#000;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:.85rem}
+.user-name{font-size:.85rem;color:var(--muted);font-family:var(--mono);display:none}
+@media(min-width:600px){.user-name{display:block}}
+.btn-logout{background:transparent;border:1px solid var(--border);color:var(--muted);padding:.35rem .75rem;border-radius:6px;cursor:pointer;font-family:var(--mono);font-size:.75rem;transition:.2s}
+.btn-logout:hover{border-color:var(--danger);color:var(--danger)}
+
+/* NAV */
+.nav{display:flex;gap:0;background:var(--surface);border-bottom:1px solid var(--border);overflow-x:auto;scrollbar-width:none}
+.nav::-webkit-scrollbar{display:none}
+.nav-btn{flex-shrink:0;padding:.75rem 1.25rem;background:transparent;border:none;color:var(--muted);cursor:pointer;font-family:var(--display);font-size:.85rem;border-bottom:2px solid transparent;transition:.2s;white-space:nowrap}
+.nav-btn.active{color:var(--accent);border-bottom-color:var(--accent)}
+
+/* SECTIONS */
+.section{display:none;padding:1.5rem;max-width:900px;margin:0 auto}
+.section.active{display:block}
+
+/* HOY */
+.day-hero{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:2rem;margin-bottom:1.5rem;text-align:center;position:relative;overflow:hidden}
+.day-hero::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse at 50% 0%,rgba(200,241,53,.06),transparent 70%);pointer-events:none}
+.day-label{font-family:var(--mono);font-size:.75rem;color:var(--muted);text-transform:uppercase;letter-spacing:.1em;margin-bottom:.5rem}
+.day-number{font-size:5rem;font-weight:800;line-height:1;color:var(--accent);letter-spacing:-4px}
+.day-sub{font-size:.9rem;color:var(--muted);margin-top:.5rem;font-family:var(--mono)}
+.day-done-badge{display:inline-block;background:var(--success);color:#000;font-weight:700;font-size:.8rem;padding:.3rem .9rem;border-radius:20px;margin-top:.5rem;font-family:var(--mono)}
+
+.series-section{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:1.5rem;margin-bottom:1.5rem}
+.section-title{font-size:1rem;font-weight:700;margin-bottom:1rem;display:flex;align-items:center;gap:.5rem}
+.badge-count{background:var(--accent);color:#000;font-size:.7rem;font-family:var(--mono);padding:.15rem .5rem;border-radius:10px;font-weight:700}
+
+.series-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(80px,1fr));gap:.5rem;margin-bottom:1rem}
+.serie-item{background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:.6rem .4rem;text-align:center;cursor:pointer;transition:.2s;position:relative}
+.serie-item:hover{border-color:var(--accent)}
+.serie-item.done{background:rgba(200,241,53,.12);border-color:var(--accent)}
+.serie-item.done .si-n{color:var(--accent)}
+.si-n{font-size:1.3rem;font-weight:800;font-family:var(--mono)}
+.si-l{font-size:.65rem;color:var(--muted);font-family:var(--mono)}
+.si-del{position:absolute;top:2px;right:4px;font-size:.65rem;color:var(--muted);cursor:pointer;display:none}
+.serie-item:hover .si-del{display:block}
+
+.series-controls{display:flex;gap:.75rem;align-items:center;flex-wrap:wrap}
+.inp-reps{width:90px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:.6rem .75rem;color:var(--text);font-family:var(--mono);font-size:1rem;outline:none;text-align:center}
+.inp-reps:focus{border-color:var(--accent)}
+.btn-add-serie{background:var(--accent);color:#000;border:none;border-radius:8px;padding:.6rem 1.2rem;font-family:var(--display);font-weight:700;cursor:pointer;transition:.15s;font-size:.9rem}
+.btn-add-serie:hover{opacity:.9}
+.btn-save-day{background:var(--surface2);border:1px solid var(--border);color:var(--text);border-radius:8px;padding:.6rem 1.2rem;font-family:var(--display);font-weight:700;cursor:pointer;transition:.2s;font-size:.9rem}
+.btn-save-day:hover{border-color:var(--accent);color:var(--accent)}
+.series-summary{font-family:var(--mono);font-size:.8rem;color:var(--muted);margin-top:.75rem}
+.series-summary b{color:var(--text)}
+
+/* STATS GRID */
+.stats-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:.75rem;margin-bottom:1.5rem}
+.stat-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:1rem}
+.stat-label{font-family:var(--mono);font-size:.7rem;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:.25rem}
+.stat-value{font-size:1.6rem;font-weight:800;letter-spacing:-1px}
+.stat-sub{font-family:var(--mono);font-size:.7rem;color:var(--muted);margin-top:.15rem}
+
+/* PROGRESO */
+.chart-box{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:1.5rem;margin-bottom:1.5rem}
+.chart-box canvas{max-height:260px}
+.chart-title{font-size:.9rem;font-weight:700;margin-bottom:1rem;color:var(--muted);font-family:var(--mono);text-transform:uppercase;letter-spacing:.05em}
+
+/* HISTORIAL */
+.hist-list{display:flex;flex-direction:column;gap:.5rem}
+.hist-item{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:.85rem 1rem;display:flex;align-items:center;justify-content:space-between;cursor:pointer;transition:.2s}
+.hist-item:hover{border-color:var(--accent)}
+.hist-item.expanded{border-color:var(--accent2)}
+.hi-left{display:flex;align-items:center;gap:.75rem}
+.hi-day{font-family:var(--mono);font-size:.75rem;color:var(--muted)}
+.hi-reps{font-size:1.2rem;font-weight:800;color:var(--accent)}
+.hi-reps span{font-size:.75rem;font-weight:400;color:var(--muted);font-family:var(--mono)}
+.hi-status{width:8px;height:8px;border-radius:50%;background:var(--success)}
+.hi-status.pending{background:var(--muted)}
+.hi-details{background:var(--surface2);border-radius:0 0 10px 10px;padding:.75rem 1rem;display:none;font-family:var(--mono);font-size:.78rem;color:var(--muted);border:1px solid var(--accent2);border-top:none;margin-top:-1px}
+.hi-details.show{display:block}
+
+/* MEDICIONES */
+.meds-form{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:1.5rem;margin-bottom:1.5rem}
+.meds-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:.75rem;margin-bottom:1rem}
+.med-field label{font-family:var(--mono);font-size:.7rem;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;display:block;margin-bottom:.3rem}
+.med-field input{width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:.6rem .75rem;color:var(--text);font-family:var(--mono);font-size:.9rem;outline:none;transition:.2s}
+.med-field input:focus{border-color:var(--accent)}
+.btn-save-med{background:var(--accent);color:#000;border:none;border-radius:8px;padding:.7rem 1.5rem;font-family:var(--display);font-weight:700;cursor:pointer;font-size:.9rem}
+.meds-history{display:flex;flex-direction:column;gap:.5rem}
+.med-entry{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:1rem;display:grid;grid-template-columns:1fr repeat(4,auto);gap:.75rem;align-items:center}
+.med-date{font-family:var(--mono);font-size:.75rem;color:var(--muted)}
+.med-val{text-align:right}
+.med-val-n{font-weight:800;font-size:1rem}
+.med-val-u{font-family:var(--mono);font-size:.65rem;color:var(--muted)}
+.med-del{background:transparent;border:none;color:var(--muted);cursor:pointer;font-size:.8rem;padding:.2rem}
+.med-del:hover{color:var(--danger)}
+
+/* PERFIL */
+.profile-box{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:1.5rem;margin-bottom:1rem}
+.avatar-big{width:64px;height:64px;border-radius:50%;background:var(--accent);color:#000;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:1.5rem;margin-bottom:1rem}
+.profile-name{font-size:1.5rem;font-weight:800}
+.profile-meta{font-family:var(--mono);font-size:.8rem;color:var(--muted);margin-top:.25rem}
+
+/* TOAST */
+.toast{position:fixed;bottom:2rem;left:50%;transform:translateX(-50%);background:var(--accent);color:#000;font-family:var(--mono);font-size:.85rem;font-weight:500;padding:.75rem 1.5rem;border-radius:20px;z-index:999;opacity:0;transition:.3s;pointer-events:none}
+.toast.show{opacity:1}
+
+/* RESPONSIVE */
+@media(max-width:500px){
+  .day-number{font-size:3.5rem}
+  .section{padding:1rem}
+  .series-controls{gap:.5rem}
+  .topbar{padding:.75rem 1rem}
+  .med-entry{grid-template-columns:1fr 1fr;gap:.5rem}
+}
+</style>
+</head>
+<body>
+
+<!-- AUTH -->
+<div id="auth-screen">
+  <div class="auth-box">
+    <div class="auth-logo">RETO<span>365</span></div>
+    <div class="auth-sub">// flexiones · seguimiento personal</div>
+    <div class="auth-tabs">
+      <button class="auth-tab active" onclick="switchTab('login')">Entrar</button>
+      <button class="auth-tab" onclick="switchTab('register')">Registrarse</button>
+    </div>
+    <div id="login-form">
+      <div class="field"><label>Usuario</label><input type="text" id="l-user" placeholder="tu_nombre" autocomplete="username"></div>
+      <div class="field"><label>Contraseña</label><input type="password" id="l-pass" placeholder="••••••••" autocomplete="current-password"></div>
+      <button class="btn-primary" onclick="login()">Entrar →</button>
+    </div>
+    <div id="register-form" style="display:none">
+      <div class="field"><label>Nombre</label><input type="text" id="r-name" placeholder="Tu nombre"></div>
+      <div class="field"><label>Usuario</label><input type="text" id="r-user" placeholder="sin espacios, sin tildes"></div>
+      <div class="field"><label>Contraseña</label><input type="password" id="r-pass" placeholder="mínimo 4 caracteres"></div>
+      <button class="btn-primary" onclick="register()">Crear cuenta →</button>
+    </div>
+    <div class="auth-msg" id="auth-msg"></div>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app">
+  <div class="topbar">
+    <div class="topbar-logo">RETO<span>365</span></div>
+    <div class="topbar-user">
+      <span class="user-name" id="top-username"></span>
+      <div class="user-avatar" id="top-avatar">?</div>
+      <button class="btn-logout" onclick="logout()">Salir</button>
+    </div>
+  </div>
+
+  <div class="nav">
+    <button class="nav-btn active" onclick="showSection('hoy')">Hoy</button>
+    <button class="nav-btn" onclick="showSection('stats')">Stats</button>
+    <button class="nav-btn" onclick="showSection('progreso')">Progreso</button>
+    <button class="nav-btn" onclick="showSection('historial')">Historial</button>
+    <button class="nav-btn" onclick="showSection('mediciones')">Mediciones</button>
+    <button class="nav-btn" onclick="showSection('perfil')">Perfil</button>
+  </div>
+
+  <!-- HOY -->
+  <div class="section active" id="section-hoy">
+    <div class="day-hero">
+      <div class="day-label">Día del año</div>
+      <div class="day-number" id="hero-day">—</div>
+      <div class="day-sub" id="hero-date">—</div>
+      <div id="hero-done" style="margin-top:.5rem;display:none">
+        <div class="day-done-badge">✓ Completado</div>
+      </div>
+    </div>
+
+    <div class="series-section">
+      <div class="section-title">
+        Series de hoy
+        <span class="badge-count" id="badge-series">0</span>
+      </div>
+      <div class="series-grid" id="series-grid"></div>
+      <div class="series-controls">
+        <input type="number" class="inp-reps" id="inp-reps" min="1" max="999" placeholder="Reps">
+        <button class="btn-add-serie" onclick="addSerie()">+ Serie</button>
+        <button class="btn-save-day" onclick="saveDay()">Guardar día ✓</button>
+      </div>
+      <div class="series-summary" id="series-summary"></div>
+    </div>
+  </div>
+
+  <!-- STATS -->
+  <div class="section" id="section-stats">
+    <div class="stats-grid" id="stats-grid"></div>
+  </div>
+
+  <!-- PROGRESO -->
+  <div class="section" id="section-progreso">
+    <div class="chart-box">
+      <div class="chart-title">Flexiones por día</div>
+      <canvas id="chart-daily"></canvas>
+    </div>
+    <div class="chart-box">
+      <div class="chart-title">Acumulado total</div>
+      <canvas id="chart-acum"></canvas>
+    </div>
+    <div class="chart-box">
+      <div class="chart-title">Series por día</div>
+      <canvas id="chart-series"></canvas>
+    </div>
+  </div>
+
+  <!-- HISTORIAL -->
+  <div class="section" id="section-historial">
+    <div style="margin-bottom:1rem;display:flex;gap:.5rem;align-items:center">
+      <input type="text" id="hist-search" placeholder="Buscar día..." style="flex:1;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:.6rem 1rem;color:var(--text);font-family:var(--mono);font-size:.85rem;outline:none">
+    </div>
+    <div class="hist-list" id="hist-list"></div>
+  </div>
+
+  <!-- MEDICIONES -->
+  <div class="section" id="section-mediciones">
+    <div class="meds-form">
+      <div class="section-title">Nueva medición</div>
+      <div class="meds-grid">
+        <div class="med-field"><label>Fecha</label><input type="date" id="med-fecha"></div>
+        <div class="med-field"><label>Peso (kg)</label><input type="number" id="med-peso" step="0.1" placeholder="75.5"></div>
+        <div class="med-field"><label>Pecho (cm)</label><input type="number" id="med-pecho" step="0.5" placeholder="98"></div>
+        <div class="med-field"><label>Cintura (cm)</label><input type="number" id="med-cintura" step="0.5" placeholder="82"></div>
+        <div class="med-field"><label>Cadera (cm)</label><input type="number" id="med-cadera" step="0.5" placeholder="95"></div>
+        <div class="med-field"><label>Bícep (cm)</label><input type="number" id="med-bicep" step="0.5" placeholder="35"></div>
+        <div class="med-field"><label>Muslo (cm)</label><input type="number" id="med-muslo" step="0.5" placeholder="55"></div>
+        <div class="med-field"><label>Grasa corporal (%)</label><input type="number" id="med-grasa" step="0.1" placeholder="18"></div>
+      </div>
+      <div class="field"><label>Notas</label><input type="text" id="med-notas" placeholder="Cómo te encontraste hoy..."></div>
+      <button class="btn-save-med" onclick="saveMedicion()">Guardar medición</button>
+    </div>
+    <div class="chart-box" id="chart-peso-box" style="display:none">
+      <div class="chart-title">Evolución del peso</div>
+      <canvas id="chart-peso"></canvas>
+    </div>
+    <div class="meds-history" id="meds-history"></div>
+  </div>
+
+  <!-- PERFIL -->
+  <div class="section" id="section-perfil">
+    <div class="profile-box">
+      <div class="avatar-big" id="profile-avatar">?</div>
+      <div class="profile-name" id="profile-name">—</div>
+      <div class="profile-meta" id="profile-meta">—</div>
+    </div>
+    <div class="profile-box">
+      <div class="section-title">Personalizar</div>
+      <div class="field"><label>Nombre para mostrar</label><input type="text" id="p-display" placeholder="Tu nombre"></div>
+      <div class="field"><label>Inicio del reto</label><input type="date" id="p-start" value="2025-01-01"></div>
+      <div class="field"><label>Meta diaria base</label><input type="number" id="p-base" value="1" min="1" placeholder="Reps día 1"></div>
+      <button class="btn-primary" style="max-width:200px" onclick="saveProfile()">Guardar cambios</button>
+    </div>
+    <div class="profile-box" style="border-color:var(--danger)">
+      <div class="section-title" style="color:var(--danger)">Zona peligrosa</div>
+      <button onclick="exportData()" class="btn-save-day" style="margin-right:.5rem;margin-bottom:.5rem">Exportar datos (JSON)</button>
+      <button onclick="if(confirm('¿Borrar TODOS tus datos?')) clearData()" class="btn-save-day" style="border-color:var(--danger);color:var(--danger)">Borrar todo</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ===== STORAGE =====
+function getUsers(){return JSON.parse(localStorage.getItem('reto365_users')||'{}')}
+function saveUsers(u){localStorage.setItem('reto365_users',JSON.stringify(u))}
+function getUserData(user){return JSON.parse(localStorage.getItem('reto365_data_'+user)||'null')}
+function saveUserData(user,data){localStorage.setItem('reto365_data_'+user,JSON.stringify(data))}
+function getCurrentUser(){return localStorage.getItem('reto365_current')||null}
+function setCurrentUser(u){localStorage.setItem('reto365_current',u)}
+
+let currentUser=null;
+let userData=null;
+
+function defaultData(name){
+  return {
+    displayName:name,
+    startDate:'2025-01-01',
+    baseReps:1,
+    days:{},      // {dayNum: {date,series:[],total,note}}
+    mediciones:[] // [{fecha,peso,pecho,cintura,cadera,bicep,muslo,grasa,notas}]
+  }
+}
+
+// ===== AUTH =====
+function switchTab(t){
+  document.querySelectorAll('.auth-tab').forEach((b,i)=>b.classList.toggle('active',(i===0&&t==='login')||(i===1&&t==='register')));
+  document.getElementById('login-form').style.display=t==='login'?'block':'none';
+  document.getElementById('register-form').style.display=t==='register'?'block':'none';
+  document.getElementById('auth-msg').textContent='';
+}
+function authMsg(msg,type){const el=document.getElementById('auth-msg');el.textContent=msg;el.className='auth-msg '+(type||'')}
+
+function login(){
+  const u=document.getElementById('l-user').value.trim().toLowerCase();
+  const p=document.getElementById('l-pass').value;
+  if(!u||!p){authMsg('Completa todos los campos','err');return}
+  const users=getUsers();
+  if(!users[u]||users[u]!==btoa(p)){authMsg('Usuario o contraseña incorrectos','err');return}
+  setCurrentUser(u);
+  initApp(u);
+}
+function register(){
+  const name=document.getElementById('r-name').value.trim();
+  const u=document.getElementById('r-user').value.trim().toLowerCase().replace(/[^a-z0-9_]/g,'');
+  const p=document.getElementById('r-pass').value;
+  if(!name||!u||!p){authMsg('Completa todos los campos','err');return}
+  if(p.length<4){authMsg('Contraseña mínimo 4 caracteres','err');return}
+  if(!u){authMsg('Usuario no válido','err');return}
+  const users=getUsers();
+  if(users[u]){authMsg('Ese usuario ya existe','err');return}
+  users[u]=btoa(p);
+  saveUsers(users);
+  const d=defaultData(name);
+  saveUserData(u,d);
+  setCurrentUser(u);
+  initApp(u);
+}
+function logout(){
+  localStorage.removeItem('reto365_current');
+  location.reload();
+}
+function initApp(user){
+  currentUser=user;
+  userData=getUserData(user)||defaultData(user);
+  saveUserData(user,userData);
+  document.getElementById('auth-screen').style.display='none';
+  document.getElementById('app').style.display='block';
+  const initials=(userData.displayName||user).split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2);
+  document.getElementById('top-avatar').textContent=initials;
+  document.getElementById('top-username').textContent=userData.displayName||user;
+  document.getElementById('profile-avatar').textContent=initials;
+  document.getElementById('profile-name').textContent=userData.displayName||user;
+  document.getElementById('p-display').value=userData.displayName||'';
+  document.getElementById('p-start').value=userData.startDate||'2025-01-01';
+  document.getElementById('p-base').value=userData.baseReps||1;
+  renderHoy();
+  renderStats();
+}
+
+// ===== HOY =====
+let todaySeries=[];
+function getDayNum(date,start){
+  const s=new Date(start+'T00:00:00');
+  const d=new Date(date+'T00:00:00');
+  return Math.floor((d-s)/86400000)+1;
+}
+function getTodayStr(){
+  const n=new Date();
+  return n.getFullYear()+'-'+String(n.getMonth()+1).padStart(2,'0')+'-'+String(n.getDate()).padStart(2,'0');
+}
+function getDayTarget(dayNum){
+  return (userData.baseReps||1)*dayNum;
+}
+function renderHoy(){
+  const today=getTodayStr();
+  const dayNum=getDayNum(today,userData.startDate||'2025-01-01');
+  const target=getDayTarget(dayNum);
+  document.getElementById('hero-day').textContent='Día '+dayNum;
+  const opts={weekday:'long',year:'numeric',month:'long',day:'numeric'};
+  document.getElementById('hero-date').textContent=new Date(today+'T12:00:00').toLocaleDateString('es-ES',opts)+' · Meta: '+target+' flexiones';
+  const saved=userData.days[dayNum];
+  if(saved){
+    todaySeries=[...saved.series];
+    document.getElementById('hero-done').style.display='block';
+  } else {
+    todaySeries=[];
+    document.getElementById('hero-done').style.display='none';
+  }
+  renderSeriesGrid();
+}
+function renderSeriesGrid(){
+  const grid=document.getElementById('series-grid');
+  const badge=document.getElementById('badge-series');
+  const summary=document.getElementById('series-summary');
+  grid.innerHTML='';
+  let total=0;
+  todaySeries.forEach((r,i)=>{
+    total+=r;
+    const div=document.createElement('div');
+    div.className='serie-item done';
+    div.innerHTML=`<div class="si-n">${r}</div><div class="si-l">serie ${i+1}</div><div class="si-del" onclick="delSerie(${i})">✕</div>`;
+    grid.appendChild(div);
+  });
+  badge.textContent=todaySeries.length;
+  const today=getTodayStr();
+  const dayNum=getDayNum(today,userData.startDate||'2025-01-01');
+  const target=getDayTarget(dayNum);
+  const rem=Math.max(0,target-total);
+  if(todaySeries.length>0){
+    summary.innerHTML=`<b>${total}</b> flexiones en <b>${todaySeries.length}</b> series · faltan <b>${rem}</b> para el objetivo`;
+  } else {
+    summary.textContent='Añade series para registrar el día';
+  }
+}
+function addSerie(){
+  const v=parseInt(document.getElementById('inp-reps').value);
+  if(!v||v<1){showToast('Introduce un número válido');return}
+  todaySeries.push(v);
+  document.getElementById('inp-reps').value='';
+  renderSeriesGrid();
+}
+function delSerie(i){
+  todaySeries.splice(i,1);
+  renderSeriesGrid();
+}
+function saveDay(){
+  if(todaySeries.length===0){showToast('Añade al menos una serie');return}
+  const today=getTodayStr();
+  const dayNum=getDayNum(today,userData.startDate||'2025-01-01');
+  const total=todaySeries.reduce((a,b)=>a+b,0);
+  userData.days[dayNum]={date:today,series:[...todaySeries],total,note:''};
+  saveUserData(currentUser,userData);
+  document.getElementById('hero-done').style.display='block';
+  showToast('Día '+dayNum+' guardado · '+total+' flexiones');
+  renderStats();
+}
+
+// ===== STATS =====
+function renderStats(){
+  const days=userData.days;
+  const keys=Object.keys(days).map(Number).sort((a,b)=>a-b);
+  const totalFlex=keys.reduce((s,k)=>s+(days[k].total||0),0);
+  const diasCompletados=keys.length;
+  const today=getTodayStr();
+  const dayNum=getDayNum(today,userData.startDate||'2025-01-01');
+  const target=getDayTarget(dayNum);
+  const racha=calcRacha();
+  const maxDay=keys.length?Math.max(...keys.map(k=>days[k].total||0)):0;
+  const promSeries=keys.length?Math.round(keys.reduce((s,k)=>s+(days[k].series?.length||0),0)/keys.length):0;
+  const totalAnio=Array.from({length:365},(_,i)=>getDayTarget(i+1)).reduce((a,b)=>a+b,0);
+  const pct=Math.round(totalFlex/totalAnio*100);
+  const stats=[
+    {label:'Flexiones acumuladas',value:totalFlex.toLocaleString(),sub:'del total del reto'},
+    {label:'Días completados',value:diasCompletados,sub:'de '+dayNum+' días transcurridos'},
+    {label:'Racha actual',value:racha+' días',sub:'consecutivos'},
+    {label:'Hoy · objetivo',value:target,sub:'flexiones meta hoy'},
+    {label:'Máximo en un día',value:maxDay,sub:'flexiones'},
+    {label:'Progreso del año',value:pct+'%',sub:totalFlex.toLocaleString()+' / '+totalAnio.toLocaleString()},
+    {label:'Media series/día',value:promSeries,sub:'series por sesión'},
+    {label:'Días restantes',value:Math.max(0,365-dayNum),sub:'para acabar el reto'},
+  ];
+  const grid=document.getElementById('stats-grid');
+  grid.innerHTML='';
+  stats.forEach(s=>{
+    grid.innerHTML+=`<div class="stat-card"><div class="stat-label">${s.label}</div><div class="stat-value">${s.value}</div><div class="stat-sub">${s.sub}</div></div>`;
+  });
+  document.getElementById('profile-meta').textContent='@'+currentUser+' · '+diasCompletados+' días completados · '+totalFlex.toLocaleString()+' flexiones';
+}
+function calcRacha(){
+  const today=getTodayStr();
+  const dayNum=getDayNum(today,userData.startDate||'2025-01-01');
+  let racha=0;
+  for(let i=dayNum;i>=1;i--){
+    if(userData.days[i]) racha++;
+    else break;
+  }
+  return racha;
+}
+
+// ===== PROGRESO =====
+let charts={};
+function renderProgreso(){
+  const days=userData.days;
+  const keys=Object.keys(days).map(Number).sort((a,b)=>a-b);
+  const labels=keys.map(k=>days[k].date||'Día '+k);
+  const totals=keys.map(k=>days[k].total||0);
+  const seriesCount=keys.map(k=>days[k].series?.length||0);
+  let acum=0;
+  const acums=totals.map(t=>{acum+=t;return acum});
+  const cfg={responsive:true,plugins:{legend:{display:false}},scales:{x:{ticks:{color:'#888',font:{size:10},maxTicksLimit:10},grid:{color:'#1e1e1e'}},y:{ticks:{color:'#888',font:{size:11}},grid:{color:'#1e1e1e'}}}};
+  const accentColor='rgba(200,241,53,0.85)';
+  const accentFill='rgba(200,241,53,0.15)';
+  if(charts.daily){charts.daily.destroy()}
+  if(charts.acum){charts.acum.destroy()}
+  if(charts.series){charts.series.destroy()}
+  charts.daily=new Chart(document.getElementById('chart-daily'),{type:'bar',data:{labels,datasets:[{data:totals,backgroundColor:accentColor,borderRadius:4}]},options:{...cfg}});
+  charts.acum=new Chart(document.getElementById('chart-acum'),{type:'line',data:{labels,datasets:[{data:acums,borderColor:'#c8f135',backgroundColor:accentFill,fill:true,tension:.3,pointRadius:2}]},options:{...cfg}});
+  charts.series=new Chart(document.getElementById('chart-series'),{type:'bar',data:{labels,datasets:[{data:seriesCount,backgroundColor:'rgba(241,193,53,0.8)',borderRadius:4}]},options:{...cfg}});
+}
+
+// ===== HISTORIAL =====
+function renderHistorial(){
+  const days=userData.days;
+  const keys=Object.keys(days).map(Number).sort((a,b)=>b-a);
+  const list=document.getElementById('hist-list');
+  const search=document.getElementById('hist-search').value.toLowerCase();
+  list.innerHTML='';
+  if(!keys.length){list.innerHTML='<div style="color:var(--muted);font-family:var(--mono);text-align:center;padding:2rem">Aún no hay días registrados</div>';return}
+  keys.forEach(k=>{
+    const d=days[k];
+    const dateStr=d.date||'Día '+k;
+    const label='Día '+k+' · '+new Date(dateStr+'T12:00:00').toLocaleDateString('es-ES',{weekday:'short',day:'numeric',month:'short'});
+    if(search&&!label.toLowerCase().includes(search)&&!String(k).includes(search))return;
+    const target=getDayTarget(k);
+    const ok=d.total>=target;
+    const div=document.createElement('div');
+    div.className='hist-item';
+    div.innerHTML=`
+      <div class="hi-left">
+        <div class="hi-status ${ok?'':'pending'}"></div>
+        <div>
+          <div style="font-size:.8rem;font-family:var(--mono);color:var(--muted)">${label}</div>
+          <div class="hi-reps">${d.total} <span>flexiones · ${d.series?.length||0} series · meta ${target}</span></div>
+        </div>
+      </div>
+      <div style="font-size:.75rem;font-family:var(--mono);color:${ok?'var(--success)':'var(--muted)'}">${ok?'✓ Ok':'Parcial'}</div>
+    `;
+    const detail=document.createElement('div');
+    detail.className='hi-details';
+    detail.innerHTML=`Series: ${(d.series||[]).join(' + ')||'—'} = ${d.total} rep${d.total!==1?'s':''}`+(d.note?` | Nota: ${d.note}`:'');
+    div.onclick=()=>{detail.classList.toggle('show');div.classList.toggle('expanded')};
+    list.appendChild(div);
+    list.appendChild(detail);
+  });
+}
+
+// ===== MEDICIONES =====
+function saveMedicion(){
+  const fecha=document.getElementById('med-fecha').value||getTodayStr();
+  const get=id=>parseFloat(document.getElementById(id).value)||null;
+  const m={
+    fecha,
+    peso:get('med-peso'),pecho:get('med-pecho'),
+    cintura:get('med-cintura'),cadera:get('med-cadera'),
+    bicep:get('med-bicep'),muslo:get('med-muslo'),
+    grasa:get('med-grasa'),
+    notas:document.getElementById('med-notas').value
+  };
+  if(!m.peso&&!m.pecho&&!m.cintura){showToast('Añade al menos una medición');return}
+  userData.mediciones.unshift(m);
+  saveUserData(currentUser,userData);
+  ['med-peso','med-pecho','med-cintura','med-cadera','med-bicep','med-muslo','med-grasa','med-notas'].forEach(id=>document.getElementById(id).value='');
+  showToast('Medición guardada');
+  renderMediciones();
+}
+function renderMediciones(){
+  const meds=userData.mediciones||[];
+  const box=document.getElementById('chart-peso-box');
+  const hist=document.getElementById('meds-history');
+  if(meds.length>=2&&meds.some(m=>m.peso)){
+    box.style.display='block';
+    const withPeso=meds.filter(m=>m.peso).reverse();
+    if(charts.peso){charts.peso.destroy()}
+    charts.peso=new Chart(document.getElementById('chart-peso'),{type:'line',data:{
+      labels:withPeso.map(m=>new Date(m.fecha+'T12:00:00').toLocaleDateString('es-ES',{day:'numeric',month:'short'})),
+      datasets:[{data:withPeso.map(m=>m.peso),borderColor:'#f1c135',backgroundColor:'rgba(241,193,53,.15)',fill:true,tension:.3,pointRadius:3}]
+    },options:{responsive:true,plugins:{legend:{display:false}},scales:{x:{ticks:{color:'#888',font:{size:10}},grid:{color:'#1e1e1e'}},y:{ticks:{color:'#888'},grid:{color:'#1e1e1e'}}}}});
+  }
+  hist.innerHTML='';
+  if(!meds.length){hist.innerHTML='<div style="color:var(--muted);font-family:var(--mono);text-align:center;padding:2rem">Sin mediciones aún</div>';return}
+  meds.forEach((m,i)=>{
+    const d=document.createElement('div');
+    d.className='med-entry';
+    const dateLabel=new Date(m.fecha+'T12:00:00').toLocaleDateString('es-ES',{day:'numeric',month:'short',year:'numeric'});
+    const vals=[
+      m.peso?`<div class="med-val"><div class="med-val-n">${m.peso}</div><div class="med-val-u">kg peso</div></div>`:'',
+      m.pecho?`<div class="med-val"><div class="med-val-n">${m.pecho}</div><div class="med-val-u">cm pecho</div></div>`:'',
+      m.cintura?`<div class="med-val"><div class="med-val-n">${m.cintura}</div><div class="med-val-u">cm cintura</div></div>`:'',
+      m.bicep?`<div class="med-val"><div class="med-val-n">${m.bicep}</div><div class="med-val-u">cm bícep</div></div>`:'',
+      m.grasa?`<div class="med-val"><div class="med-val-n">${m.grasa}%</div><div class="med-val-u">grasa</div></div>`:'',
+    ].filter(Boolean).join('');
+    d.innerHTML=`<div><div class="med-date">${dateLabel}</div>${m.notas?`<div style="font-size:.7rem;color:var(--muted);font-family:var(--mono);margin-top:.15rem">${m.notas}</div>`:''}</div>${vals}<button class="med-del" onclick="delMedicion(${i})">✕</button>`;
+    hist.appendChild(d);
+  });
+}
+function delMedicion(i){
+  if(!confirm('¿Eliminar esta medición?'))return;
+  userData.mediciones.splice(i,1);
+  saveUserData(currentUser,userData);
+  renderMediciones();
+}
+
+// ===== PERFIL =====
+function saveProfile(){
+  userData.displayName=document.getElementById('p-display').value.trim()||userData.displayName;
+  userData.startDate=document.getElementById('p-start').value||'2025-01-01';
+  userData.baseReps=parseInt(document.getElementById('p-base').value)||1;
+  saveUserData(currentUser,userData);
+  const initials=(userData.displayName||currentUser).split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2);
+  document.getElementById('top-avatar').textContent=initials;
+  document.getElementById('top-username').textContent=userData.displayName;
+  document.getElementById('profile-avatar').textContent=initials;
+  document.getElementById('profile-name').textContent=userData.displayName;
+  showToast('Perfil actualizado');
+  renderHoy();
+}
+function exportData(){
+  const blob=new Blob([JSON.stringify(userData,null,2)],{type:'application/json'});
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download='reto365_backup_'+currentUser+'.json';
+  a.click();
+}
+function clearData(){
+  userData=defaultData(userData.displayName||currentUser);
+  saveUserData(currentUser,userData);
+  showToast('Datos borrados');
+  renderHoy();renderStats();
+}
+
+// ===== NAV =====
+function showSection(id){
+  document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('section-'+id).classList.add('active');
+  document.querySelectorAll('.nav-btn').forEach(b=>{if(b.textContent.toLowerCase().includes(id.slice(0,4)))b.classList.add('active')});
+  if(id==='progreso')renderProgreso();
+  if(id==='historial')renderHistorial();
+  if(id==='mediciones'){document.getElementById('med-fecha').value=getTodayStr();renderMediciones()}
+  if(id==='stats')renderStats();
+}
+
+// ===== TOAST =====
+function showToast(msg){
+  const t=document.getElementById('toast');
+  t.textContent=msg;t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),2500);
+}
+
+// ===== INIT =====
+document.getElementById('hist-search').addEventListener('input',renderHistorial);
+document.getElementById('inp-reps').addEventListener('keydown',e=>{if(e.key==='Enter')addSerie()});
+
+const cu=getCurrentUser();
+if(cu){
+  const ud=getUserData(cu);
+  if(ud){initApp(cu)}
+}
+</script>
+</body>
+</html>
