@@ -2,7 +2,16 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Reto 365">
+<meta name="application-name" content="Reto 365">
+<meta name="theme-color" content="#0a0a0a">
+<meta name="description" content="Seguimiento personal del reto de flexiones 365 días">
+<link rel="manifest" id="manifest-placeholder">
+<link rel="apple-touch-icon" id="apple-icon">
 <title>Reto Flexiones 365</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Syne:wght@400;700;800&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
@@ -677,6 +686,36 @@ if(cu){
   const ud=getUserData(cu);
   if(ud){initApp(cu)}
 }
+
+// ===== PWA =====
+(function(){
+  const svg=`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><rect width="512" height="512" rx="100" fill="#0a0a0a"/><text x="256" y="210" font-family="Arial Black,sans-serif" font-size="160" font-weight="900" fill="#c8f135" text-anchor="middle">R</text><text x="256" y="360" font-family="Arial,sans-serif" font-size="80" font-weight="700" fill="#888" text-anchor="middle">365</text></svg>`;
+  const iconUrl='data:image/svg+xml;base64,'+btoa(svg);
+  document.getElementById('apple-icon').setAttribute('href',iconUrl);
+  const manifest={name:'Reto Flexiones 365',short_name:'Reto 365',description:'Seguimiento del reto de flexiones 365 días',start_url:'./',scope:'./',display:'standalone',orientation:'portrait-primary',background_color:'#0a0a0a',theme_color:'#0a0a0a',lang:'es',icons:[{src:iconUrl,sizes:'192x192',type:'image/svg+xml',purpose:'any maskable'},{src:iconUrl,sizes:'512x512',type:'image/svg+xml',purpose:'any maskable'}]};
+  const mBlob=new Blob([JSON.stringify(manifest)],{type:'application/manifest+json'});
+  document.getElementById('manifest-placeholder').setAttribute('href',URL.createObjectURL(mBlob));
+  const swCode=`const CACHE='reto365-v1';self.addEventListener('install',e=>{self.skipWaiting()});self.addEventListener('activate',e=>{self.clients.claim()});self.addEventListener('fetch',e=>{e.respondWith(fetch(e.request).catch(()=>caches.match(e.request)))});`;
+  if('serviceWorker' in navigator){
+    const swBlob=new Blob([swCode],{type:'application/javascript'});
+    navigator.serviceWorker.register(URL.createObjectURL(swBlob),{scope:'./'}).catch(()=>{});
+  }
+  let deferredPrompt=null;
+  const banner=document.createElement('div');
+  banner.style.cssText='position:fixed;bottom:0;left:0;right:0;background:#141414;border-top:1px solid #2a2a2a;padding:1rem 1.25rem;display:none;align-items:center;justify-content:space-between;gap:1rem;z-index:9999';
+  banner.innerHTML=`<div><div style="font-weight:700;font-size:.95rem;color:#f0f0f0;font-family:Syne,sans-serif">Instalar en pantalla de inicio</div><div style="font-size:.75rem;color:#888;font-family:DM Mono,monospace;margin-top:.15rem">Acceso rápido sin abrir el navegador</div></div><div style="display:flex;gap:.5rem;flex-shrink:0"><button id="pwa-no" style="background:transparent;border:1px solid #2a2a2a;color:#888;padding:.5rem .9rem;border-radius:8px;cursor:pointer;font-size:.8rem;font-family:Syne,sans-serif">Ahora no</button><button id="pwa-si" style="background:#c8f135;color:#000;border:none;padding:.5rem 1.1rem;border-radius:8px;cursor:pointer;font-weight:700;font-size:.85rem;font-family:Syne,sans-serif">+ Instalar</button></div>`;
+  document.body.appendChild(banner);
+  window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();deferredPrompt=e;if(!sessionStorage.getItem('pwa-no'))banner.style.display='flex'});
+  document.getElementById('pwa-si').onclick=async()=>{if(!deferredPrompt)return;deferredPrompt.prompt();const{outcome}=await deferredPrompt.userChoice;deferredPrompt=null;banner.style.display='none';if(outcome==='accepted')showToast('App instalada')};
+  document.getElementById('pwa-no').onclick=()=>{banner.style.display='none';sessionStorage.setItem('pwa-no','1')};
+  const isIOS=/iphone|ipad|ipod/i.test(navigator.userAgent)&&!window.navigator.standalone;
+  if(isIOS&&!sessionStorage.getItem('pwa-no')){
+    const b=document.createElement('div');
+    b.style.cssText='position:fixed;bottom:0;left:0;right:0;background:#141414;border-top:1px solid #c8f135;padding:1rem 1.25rem;z-index:9999';
+    b.innerHTML=`<div style="display:flex;justify-content:space-between;align-items:center"><div style="font-family:Syne,sans-serif"><div style="font-weight:700;font-size:.9rem;color:#f0f0f0;margin-bottom:.2rem">Instalar en iOS</div><div style="font-size:.73rem;color:#888;font-family:DM Mono,monospace">Pulsa <b style="color:#c8f135">Compartir ↑</b> → <b style="color:#c8f135">Añadir a inicio</b></div></div><button onclick="this.closest('div').parentElement.remove();sessionStorage.setItem('pwa-no','1')" style="background:transparent;border:none;color:#888;font-size:1.3rem;cursor:pointer">✕</button></div>`;
+    document.body.appendChild(b);
+  }
+})();
 </script>
 </body>
 </html>
