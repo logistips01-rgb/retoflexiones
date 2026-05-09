@@ -239,6 +239,28 @@ body{background:var(--bg);color:var(--text);font-family:var(--display);min-heigh
         <button class="btn-save-day" onclick="saveDay()">Guardar día ✓</button>
       </div>
       <div class="series-summary" id="series-summary"></div>
+      <div id="crono-box" style="margin-top:1rem;background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:1rem;display:none">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.75rem">
+          <div style="font-size:.75rem;font-family:var(--mono);color:var(--muted);text-transform:uppercase;letter-spacing:.05em">⏱ Descanso</div>
+          <div style="display:flex;align-items:center;gap:.4rem">
+            <span style="font-size:.7rem;color:var(--muted);font-family:var(--mono)">seg:</span>
+            <input type="number" id="crono-preset" value="150" min="10" max="600" style="width:58px;background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:.25rem .4rem;color:var(--text);font-family:var(--mono);font-size:.8rem;outline:none;text-align:center">
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;gap:1rem">
+          <div id="crono-display" style="font-size:2.8rem;font-weight:800;font-family:var(--mono);letter-spacing:-2px;color:var(--accent);min-width:90px">2:30</div>
+          <div style="flex:1">
+            <div style="background:var(--border);border-radius:4px;height:6px;overflow:hidden">
+              <div id="crono-bar" style="height:6px;background:var(--accent);border-radius:4px;width:100%;transition:width .5s linear"></div>
+            </div>
+            <div id="crono-msg" style="font-size:.72rem;font-family:var(--mono);color:var(--muted);margin-top:.4rem">Pulsa + Serie para arrancar</div>
+          </div>
+          <div style="display:flex;gap:.4rem">
+            <button id="crono-toggle" onclick="cronoToggle()" style="background:var(--surface);border:1px solid var(--border);color:var(--text);border-radius:8px;padding:.45rem .8rem;cursor:pointer;font-size:.85rem">▶</button>
+            <button onclick="cronoReset()" style="background:var(--surface);border:1px solid var(--border);color:var(--muted);border-radius:8px;padding:.45rem .8rem;cursor:pointer;font-size:.8rem">↺</button>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -282,7 +304,7 @@ body{background:var(--bg);color:var(--text);font-family:var(--display);min-heigh
         <div class="med-field"><label>Cintura (cm)</label><input type="number" id="med-cintura" step="0.5" placeholder="82"></div>
         <div class="med-field"><label>Cadera (cm)</label><input type="number" id="med-cadera" step="0.5" placeholder="95"></div>
         <div class="med-field"><label>Bícep (cm)</label><input type="number" id="med-bicep" step="0.5" placeholder="35"></div>
-        <div class="med-field"><label>Muslo (cm)</label><input type="number" id="med-muslo" step="0.5" placeholder="55"></div>
+        <div class="med-field"><label>Hombro (cm)</label><input type="number" id="med-hombro" step="0.5" placeholder="112"></div>
         <div class="med-field"><label>Grasa corporal (%)</label><input type="number" id="med-grasa" step="0.1" placeholder="18"></div>
       </div>
       <div class="field"><label>Notas</label><input type="text" id="med-notas" placeholder="Cómo te encontraste hoy..."></div>
@@ -337,7 +359,7 @@ function defaultData(name){
     startDate:'2025-01-01',
     baseReps:1,
     days:{},      // {dayNum: {date,series:[],total,note}}
-    mediciones:[] // [{fecha,peso,pecho,cintura,cadera,bicep,muslo,grasa,notas}]
+    mediciones:[] // [{fecha,peso,pecho,cintura,cadera,bicep,hombro,grasa,notas}]
   }
 }
 
@@ -458,6 +480,15 @@ function addSerie(){
   todaySeries.push(v);
   document.getElementById('inp-reps').value='';
   renderSeriesGrid();
+  // Mostrar y arrancar cronómetro de descanso
+  document.getElementById('crono-box').style.display='block';
+  cronoTotal=cronoGetPreset(); cronoLeft=cronoTotal;
+  clearInterval(cronoTimer); cronoRunning=false;
+  document.getElementById('crono-toggle').textContent='▶';
+  cronoUpdate();
+  cronoStart();
+  // Foco al input para la siguiente serie
+  document.getElementById('inp-reps').focus();
 }
 function delSerie(i){
   todaySeries.splice(i,1);
@@ -582,14 +613,14 @@ function saveMedicion(){
     fecha,
     peso:get('med-peso'),pecho:get('med-pecho'),
     cintura:get('med-cintura'),cadera:get('med-cadera'),
-    bicep:get('med-bicep'),muslo:get('med-muslo'),
+    bicep:get('med-bicep'),hombro:get('med-hombro'),
     grasa:get('med-grasa'),
     notas:document.getElementById('med-notas').value
   };
   if(!m.peso&&!m.pecho&&!m.cintura){showToast('Añade al menos una medición');return}
   userData.mediciones.unshift(m);
   saveUserData(currentUser,userData);
-  ['med-peso','med-pecho','med-cintura','med-cadera','med-bicep','med-muslo','med-grasa','med-notas'].forEach(id=>document.getElementById(id).value='');
+  ['med-peso','med-pecho','med-cintura','med-cadera','med-bicep','med-hombro','med-grasa','med-notas'].forEach(id=>document.getElementById(id).value='');
   showToast('Medición guardada');
   renderMediciones();
 }
@@ -675,6 +706,56 @@ function showToast(msg){
   const t=document.getElementById('toast');
   t.textContent=msg;t.classList.add('show');
   setTimeout(()=>t.classList.remove('show'),2500);
+}
+
+// ===== CRONÓMETRO DESCANSO =====
+let cronoTimer=null, cronoLeft=150, cronoTotal=150, cronoRunning=false;
+
+function cronoGetPreset(){return parseInt(document.getElementById('crono-preset').value)||150}
+
+function cronoUpdate(){
+  const m=Math.floor(cronoLeft/60), s=cronoLeft%60;
+  document.getElementById('crono-display').textContent=m+':'+(s<10?'0':'')+s;
+  const pct=(cronoLeft/cronoTotal)*100;
+  document.getElementById('crono-bar').style.width=pct+'%';
+  document.getElementById('crono-bar').style.background=pct>50?'var(--accent)':pct>20?'var(--accent2)':'var(--danger)';
+  document.getElementById('crono-display').style.color=pct>50?'var(--accent)':pct>20?'var(--accent2)':'var(--danger)';
+}
+
+function cronoStart(){
+  if(cronoRunning)return;
+  cronoRunning=true;
+  document.getElementById('crono-toggle').textContent='⏸';
+  document.getElementById('crono-msg').textContent='Descansando…';
+  cronoTimer=setInterval(()=>{
+    if(cronoLeft<=0){
+      clearInterval(cronoTimer);cronoRunning=false;
+      document.getElementById('crono-toggle').textContent='▶';
+      document.getElementById('crono-msg').textContent='¡A por la siguiente serie!';
+      document.getElementById('crono-display').textContent='0:00';
+      document.getElementById('crono-bar').style.width='0%';
+      // Vibrar si el navegador lo soporta
+      if(navigator.vibrate)navigator.vibrate([200,100,200]);
+      // Pitido de aviso
+      try{const ctx=new AudioContext();const o=ctx.createOscillator();const g=ctx.createGain();o.connect(g);g.connect(ctx.destination);o.frequency.value=880;g.gain.setValueAtTime(0.3,ctx.currentTime);g.gain.exponentialRampToValueAtTime(0.001,ctx.currentTime+0.5);o.start();o.stop(ctx.currentTime+0.5);}catch(e){}
+      return;
+    }
+    cronoLeft--;
+    cronoUpdate();
+  },1000);
+}
+
+function cronoToggle(){
+  if(cronoRunning){clearInterval(cronoTimer);cronoRunning=false;document.getElementById('crono-toggle').textContent='▶';document.getElementById('crono-msg').textContent='Pausado';}
+  else{cronoStart();}
+}
+
+function cronoReset(){
+  clearInterval(cronoTimer);cronoRunning=false;
+  cronoTotal=cronoGetPreset();cronoLeft=cronoTotal;
+  document.getElementById('crono-toggle').textContent='▶';
+  document.getElementById('crono-msg').textContent='Listo para descansar';
+  cronoUpdate();
 }
 
 // ===== INIT =====
